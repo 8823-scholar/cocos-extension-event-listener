@@ -3,6 +3,58 @@
  */
 cc.Node.implement({
     /**
+     * on (EventManager wrapper) 
+     *
+     * node.onTap(function(){
+     *     console.log("tapped");
+     * });
+     *
+     * node.onHold(function(){
+     *     console.log("tapped");
+     * });
+     *
+     * node.onTouch(began, moved, ended);
+     * node.onTouchBegan(callback);
+     * node.onTouchMoved(callback);
+     * node.onTouchEnded(callback);
+     */
+    onTap: function(callback) {
+        var self = this;
+
+        var listener = {
+            event: cc.EventListener.TOUCH_ONE_BY_ONE,
+            swallowsTouches: true,
+            onTouchBegan: function(touch, event) {
+                return self.hitTestByPoint(touch.getLocation());
+            },
+            onTouchMoved: null,
+            onTouchEnded: function(touch, event) {
+                if (self.hitTestByPoint(touch.getLocation())) {
+                    callback.call(self, touch);
+                }
+            },
+        };
+
+        cc.eventManager.addListener(listener, self);
+    },
+    onTouch: function(began, moved, ended) {
+        var self = this;
+
+        var listener = {
+            event: cc.EventListener.TOUCH_ONE_BY_ONE,
+            swallowsTouches: true,
+            onTouchBegan: function(touch, event) {
+                return self.hitTestByPoint(touch.getLocation()) && (! began || began(touch, event));
+            },
+            onTouchMoved: moved,
+            onTouchEnded: ended,
+        };
+
+        cc.eventManager.addListener(listener, self);
+    },
+
+
+    /**
      * get node content size
      */
     getBoundingBox: function() {
@@ -37,6 +89,16 @@ cc.Node.implement({
 
         var rect = cc.rect(minX, minY, maxX - minX, maxY - minY);
         return cc._rectApplyAffineTransformIn(rect, this.getNodeToParentTransform());
+    },
+
+
+    /**
+     * hit test
+     */
+    hitTestByPoint: function(point) {
+        var size = this.getBoundingBox();
+        var rect = cc.rect(size.x, size.y, size.width, size.height);
+        return cc.rectContainsPoint(rect, this.convertToNodeSpace(point));
     },
 });
 
